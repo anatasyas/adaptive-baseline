@@ -15,12 +15,17 @@ from seed_questions import seed
 # Inisialisasi
 def init_baseline():
     init_db()
-    # Jalankan seeding jika belum ada soal
-    with get_conn() as conn:
-        count = conn.execute("SELECT COUNT(*) FROM questions").fetchone()[0]
-    if count == 0:
-        seed()
-    print("✅ Baseline initialized with questions from database")
+    
+    from database import seed_ontology
+    from seed_questions import seed
+
+    print("🔄 Seeding ontology...")
+    seed_ontology()          # ← INI YANG PENTING (sebelum seed questions)
+
+    print("🔄 Seeding questions...")
+    seed()                   # baru seed soal
+
+    print("✅ Baseline initialized successfully")
 
 init_baseline()
 
