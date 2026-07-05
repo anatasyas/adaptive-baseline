@@ -45,6 +45,12 @@ def answer(sid):
         "message": "Benar!" if correct else f"Salah. Jawaban benar: {data.get('answer')}"
     })
 
+# ─── Admin Routes (Baseline) ─────────────────────────────────────────────
+ADMIN_KEY = os.environ.get("ADMIN_KEY", "baseline2025")   # ← DIBEDA
+
+def _check_admin(req):
+    return req.args.get("key") == ADMIN_KEY
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
