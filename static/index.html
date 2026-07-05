@@ -1,51 +1,71 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-  <meta charset="utf-8">
-  <title>Baseline - Non Adaptive Learning</title>
+  <meta charset="UTF-8">
+  <title>Baseline - Non Adaptive Learning SD</title>
   <style>
-    body{font-family:Arial; margin:20px; background:#f0f0f0;}
-    .card{background:white; padding:20px; border-radius:10px; max-width:600px; margin:40px auto;}
-    button{margin:5px; padding:10px 20px;}
+    body { font-family: Arial, sans-serif; margin:0; background: #f0f2f5; }
+    .card { max-width: 700px; margin: 30px auto; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden; }
+    .topbar { background: #1976D2; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+    .question { padding: 25px; font-size: 1.3rem; min-height: 120px; }
+    .options { padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+    button { padding: 14px; font-size: 1.1rem; border: none; border-radius: 8px; cursor: pointer; }
+    .btn-option { background: #e3f2fd; }
+    .btn-option:hover { background: #bbdefb; }
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>Baseline Learning (Non-Adaptive)</h1>
-    <p id="question"></p>
-    <div id="options"></div>
-    <button onclick="nextQuestion()">Soal Berikutnya</button>
+    <div class="topbar">
+      <h3>Baseline Learning</h3>
+      <div id="score">Skor: <span id="score-val">0</span></div>
+    </div>
+    <div class="question" id="question"></div>
+    <div class="options" id="options"></div>
   </div>
 
   <script>
+    let score = 0;
     let currentQ = null;
 
-    async function nextQuestion() {
+    async function loadNextQuestion() {
       const res = await fetch('/api/next-question');
       currentQ = await res.json();
-      document.getElementById("question").innerHTML = currentQ.q;
-      const opts = document.getElementById("options");
-      opts.innerHTML = "";
-      currentQ.options.forEach(opt => {
-        const btn = document.createElement("button");
-        btn.textContent = opt;
-        btn.onclick = () => submitAnswer(opt);
-        opts.appendChild(btn);
-      });
+      document.getElementById("question").innerHTML = currentQ.q || currentQ.question;
+      const optsDiv = document.getElementById("options");
+      optsDiv.innerHTML = "";
+
+      if (currentQ.options) {
+        currentQ.options.forEach(opt => {
+          const btn = document.createElement("button");
+          btn.className = "btn-option";
+          btn.textContent = opt;
+          btn.onclick = () => submitAnswer(opt);
+          optsDiv.appendChild(btn);
+        });
+      }
     }
 
     async function submitAnswer(selected) {
       const res = await fetch('/api/answer', {
         method: 'POST',
-        headers: {'Content-Type':'application/json'},
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({answer: currentQ.answer, selected})
       });
       const data = await res.json();
-      alert(data.message);
-      nextQuestion();
+
+      if (data.correct) {
+        score += 10;
+        document.getElementById("score-val").textContent = score;
+        alert("✅ Benar!");
+      } else {
+        alert("❌ Salah. Jawaban benar: " + currentQ.answer);
+      }
+      loadNextQuestion();
     }
 
-    nextQuestion();
+    // Mulai
+    loadNextQuestion();
   </script>
 </body>
 </html>
