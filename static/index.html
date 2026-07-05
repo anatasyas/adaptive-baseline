@@ -184,17 +184,6 @@ body{font-family:'Nunito',sans-serif;background:linear-gradient(160deg,#E3F2FD 0
   </div>
 </div>
 
-<div class="screen" id="screen-kcs">
-  <div class="card">
-    <div class="topbar">
-      <button class="btn-back" onclick="backToTopics()">← Kembali</button>
-      <div id="kc-player" class="player-badge"></div>
-    </div>
-    <h2 id="kc-topic-title">Daftar Materi</h2>
-    <div id="kc-list" class="topic-grid"></div>
-  </div>
-</div>
-
 <!-- ══ QUESTION ══════════════════════════════════════════════════════════ -->
 <div class="screen" id="screen-question">
   <div class="card">
@@ -325,32 +314,8 @@ function renderTopics(topics){
 
 async function startTopic(topicId) {
     state.topic = topicId;
-    show("kcs");
-    await loadKCsByTopic(topicId);
-}
-
-async function loadKCsByTopic(topicId) {
-    const kcs = await api(`/api/kcs/${topicId}/${state.sid}`);
-    const container = document.getElementById("kc-list");
-    container.innerHTML = "";
-    document.getElementById("kc-topic-title").textContent = TOPIC_LABELS[topicId] || topicId;
-
-    kcs.forEach(kc => {
-        const card = document.createElement("div");
-        card.className = `topic-card ${kc.is_mastered ? 'completed' : kc.locked ? 'locked' : ''}`;
-        card.innerHTML = `
-            <span class="badge-corner">${kc.is_mastered ? '✅' : kc.locked ? '🔒' : '📌'}</span>
-            <span class="topic-name">${kc.name}</span>
-            <div class="progress-wrap">
-                <div class="progress-bar" style="width:${Math.round(kc.p_know*100)}%"></div>
-            </div>
-            <div class="topic-prog">${Math.round(kc.p_know*100)}% dikuasai</div>
-        `;
-        if (!kc.locked && !kc.is_mastered) {
-            card.onclick = () => startPracticeKC(kc.id);
-        }
-        container.appendChild(card);
-    });
+    show("question");           // Langsung ke soal
+    await loadNextQuestion();   // Mulai soal pertama
 }
 
 async function startPracticeKC(kcId) {
