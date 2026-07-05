@@ -5,6 +5,7 @@ Menggunakan fungsi get_random_question dari database
 
 from flask import Flask, request, jsonify, send_from_directory
 import os
+import random
 
 app = Flask(__name__, static_folder="static", template_folder="static")
 
