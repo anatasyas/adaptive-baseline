@@ -114,11 +114,40 @@ def get_topics(sid):
             {"id": "pola", "label": "Pola & Aljabar", "n_mastered": 0, "n_total": 4, "locked": False, "completed": False},
         ])
 
+# ====================== KC LIST (untuk tampilan topik) ======================
 @app.get("/api/kcs/<topic_id>/<sid>")
 def get_kcs(topic_id, sid):
-    """Daftar KC per topik"""
-    # Untuk baseline, return KC sederhana atau kosong dulu
-    return jsonify([])  # TODO: implement full KC logic
+    """Baseline: Tampilkan semua KC di topik tersebut"""
+    try:
+        with get_conn() as conn:
+            rows = conn.execute("""
+                SELECT 
+                    id as kc_id,
+                    name,
+                    COALESCE((SELECT p_know FROM kc_states 
+                              WHERE student_id=? AND kc_id=knowledge_components.id), 0.0) as p_know,
+                    COALESCE((SELECT is_mastered FROM kc_states 
+                              WHERE student_id=? AND kc_id=knowledge_components.id), 0) as is_mastered
+                FROM knowledge_components 
+                ORDER BY id
+            """, (sid, sid)).fetchall()
+        
+        kcs = []
+        for r in rows:
+            kc = dict(r)
+            kc["p_know"] = float(kc["p_know"])
+            kc["is_mastered"] = bool(kc["is_mastered"])
+            kc["locked"] = False                     # Baseline = semua terbuka
+            kcs.append(kc)
+        
+        if not kcs:  # fallback jika belum ada data
+            kcs = [{"kc_id": f"KC-{topic_id.upper()}-01", "name": f"Materi {topic_id.title()} Dasar", 
+                    "p_know": 0.0, "is_mastered": False, "locked": False}]
+        
+        return jsonify(kcs)
+    except Exception as e:
+        print("KC Error:", str(e))
+        return jsonify([{"kc_id": "default", "name": "Materi Default", "p_know": 0.0, "is_mastered": False, "locked": False}])
 
 @app.get("/api/progress/<sid>")
 def get_progress(sid):
@@ -167,11 +196,23 @@ def register():
 
 @app.get("/api/next-question/<sid>")
 def next_question(sid):
-    """Non-adaptive: ambil soal random dari database"""
-    q = get_random_question(None)  # None = ambil dari semua KC
-    if not q:
-        q = {"q": "Soal tidak ditemukan", "options": ["A","B","C","D"], "answer": "A"}
-    return jsonify(q)
+    """Non-adaptive: ambil soal random dari SEMUA KC"""
+    try:
+        q = get_random_question(None)   # None = ambil dari semua soal
+        if not q:
+            # Fallback soal jika database kosong
+            q = {
+                "id": 999,
+                "kc_id": "default",
+                "type": "pilgan",
+                "q": "Berapa hasil dari 2 + 3?",
+                "options": ["4", "5", "6", "7"],
+                "answer": "5"
+            }
+        return jsonify(q)
+    except Exception as e:
+        print("Next Question Error:", str(e))
+        return jsonify({"error": str(e)}), 500
 
 @app.post("/api/answer/<sid>")
 def answer(sid):
