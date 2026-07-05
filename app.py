@@ -210,12 +210,12 @@ def register():
 
 @app.get("/api/next-question/<sid>")
 def next_question(sid):
-    """Non-adaptive: ambil soal random, support filter topic"""
+    """Baseline - Ambil soal random sesuai topik"""
     try:
-        topic = request.args.get("topic")  # ambil dari query string ?topic=xxx
+        topic = request.args.get("topic")
         
-        # Kalau ada topic, filter KC berdasarkan prefix
-        kc_filter = None
+        # Mapping topik ke prefix KC
+        kc_prefix = None
         if topic:
             prefix_map = {
                 "bilangan": "KC-B",
@@ -224,21 +224,32 @@ def next_question(sid):
                 "pengukuran": "KC-P",
                 "pola": "KC-A"
             }
-            kc_filter = prefix_map.get(topic)
-        
-        q = get_random_question_by_topic(kc_filter)   # kita perlu fungsi baru
+            kc_prefix = prefix_map.get(topic)
+
+        # Ambil soal
+        q = get_random_question_by_topic(kc_prefix)
         
         if not q:
+            # Fallback soal sederhana
             q = {
-                "id": 999, "kc_id": "default", "type": "pilgan",
-                "q": "Berapa hasil 2 + 3?", 
-                "options": ["4","5","6","7"], 
-                "answer": "5"
+                "id": 999,
+                "kc_id": "default",
+                "type": "pilgan",
+                "q": "Berapa hasil 2 + 3?",
+                "options": ["4", "5", "6", "7"],
+                "answer": "5",
+                "kc_name": "Materi Dasar"
             }
+        
         return jsonify(q)
+
     except Exception as e:
-        print("Next Question Error:", str(e))
-        return jsonify({"error": "Gagal memuat soal"}), 500
+        import traceback
+        error_msg = str(e)
+        print("=== NEXT QUESTION ERROR ===")
+        print(error_msg)
+        print(traceback.format_exc())
+        return jsonify({"error": error_msg}), 500
 
 @app.post("/api/answer/<sid>")
 def answer(sid):
