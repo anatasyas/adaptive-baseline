@@ -39,6 +39,22 @@ init_baseline()
 def index():
     return send_from_directory("static", "index.html")
 
+@app.post("/api/register")
+def register():
+    data = request.json
+    name = data.get("name", "Siswa").strip() or "Siswa"
+    avatar = int(data.get("avatar", 1))
+    sid = f"S{random.randint(10000,99999)}"
+    
+    # Simpan ke database (kalau pakai database)
+    try:
+        from database import create_student
+        create_student(sid, name, avatar)
+    except:
+        pass  # kalau tidak pakai DB, skip saja
+    
+    return jsonify({"student_id": sid, "name": name})
+
 @app.get("/api/next-question/<sid>")
 def next_question(sid):
     """Non-adaptive: ambil soal random dari database"""
