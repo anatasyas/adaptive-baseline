@@ -117,8 +117,17 @@ def get_topics(sid):
 # ====================== KC LIST (untuk tampilan topik) ======================
 @app.get("/api/kcs/<topic_id>/<sid>")
 def get_kcs(topic_id, sid):
-    """Baseline: Tampilkan semua KC di topik tersebut"""
+    """Baseline: Tampilkan KC sesuai topik"""
     try:
+        # Mapping topic ke prefix KC (sesuaikan dengan data seed kamu)
+        topic_prefix = {
+            "bilangan": "KC-B",
+            "operasi": "KC-O",
+            "geometri": "KC-G",
+            "pengukuran": "KC-P",
+            "pola": "KC-A"
+        }.get(topic_id, "KC-")
+
         with get_conn() as conn:
             rows = conn.execute("""
                 SELECT 
@@ -129,25 +138,30 @@ def get_kcs(topic_id, sid):
                     COALESCE((SELECT is_mastered FROM kc_states 
                               WHERE student_id=? AND kc_id=knowledge_components.id), 0) as is_mastered
                 FROM knowledge_components 
+                WHERE id LIKE ? 
                 ORDER BY id
-            """, (sid, sid)).fetchall()
+            """, (sid, sid, f"{topic_prefix}%")).fetchall()
         
-        kcs = []
-        for r in rows:
-            kc = dict(r)
-            kc["p_know"] = float(kc["p_know"])
-            kc["is_mastered"] = bool(kc["is_mastered"])
-            kc["locked"] = False                     # Baseline = semua terbuka
-            kcs.append(kc)
-        
-        if not kcs:  # fallback jika belum ada data
-            kcs = [{"kc_id": f"KC-{topic_id.upper()}-01", "name": f"Materi {topic_id.title()} Dasar", 
-                    "p_know": 0.0, "is_mastered": False, "locked": False}]
+        kcs = [dict(r) for r in rows]
+        for kc in kcs:
+            kc["p_know"] = float(kc.get("p_know", 0))
+            kc["is_mastered"] = bool(kc.get("is_mastered", 0))
+            kc["locked"] = False
+
+        # Fallback kalau belum ada KC di topik tersebut
+        if not kcs:
+            kcs = [{
+                "kc_id": f"{topic_prefix}01",
+                "name": f"Materi {topic_id.title()} Dasar",
+                "p_know": 0.0,
+                "is_mastered": False,
+                "locked": False
+            }]
         
         return jsonify(kcs)
     except Exception as e:
         print("KC Error:", str(e))
-        return jsonify([{"kc_id": "default", "name": "Materi Default", "p_know": 0.0, "is_mastered": False, "locked": False}])
+        return jsonify([])
 
 @app.get("/api/progress/<sid>")
 def get_progress(sid):
