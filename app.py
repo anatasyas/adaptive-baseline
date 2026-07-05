@@ -210,16 +210,14 @@ def register():
         return jsonify({"error": str(e)}), 500
 
 @app.get("/api/next-question/<sid>")
-@app.get("/api/next-question/<sid>")
 def next_question(sid):
-    """Sequential Baseline per Topik"""
+    """Sequential Baseline per Topik - Versi Simpel"""
     try:
         topic = request.args.get("topic")
         
         if not topic:
             return jsonify({"error": "Topic tidak ditemukan"}), 400
 
-        # Mapping topik ke prefix KC
         prefix_map = {
             "bilangan": "KC-B",
             "operasi": "KC-O",
@@ -232,38 +230,30 @@ def next_question(sid):
         if not kc_prefix:
             return jsonify({"error": "Topik tidak valid"}), 400
 
-        # Ambil soal berikutnya secara sequential di topik ini
+        # Versi simpel: urutkan berdasarkan id soal
         with get_conn() as conn:
-            # Cari soal yang belum dikerjakan siswa di topik ini
             row = conn.execute("""
-                SELECT q.* FROM questions q
-                LEFT JOIN interactions i ON q.id = i.question_id AND i.student_id = ?
-                WHERE q.kc_id LIKE ? 
-                  AND (i.id IS NULL OR i.correct = 0)   -- ulang yang salah atau belum dikerjakan
-                ORDER BY q.id ASC
+                SELECT * FROM questions 
+                WHERE kc_id LIKE ? 
+                ORDER BY id ASC 
                 LIMIT 1
-            """, (sid, f"{kc_prefix}%")).fetchone()
+            """, (f"{kc_prefix}%",)).fetchone()
             
             if not row:
-                # Kalau semua sudah selesai, ambil soal pertama lagi atau beri pesan selesai
-                row = conn.execute(
-                    "SELECT * FROM questions WHERE kc_id LIKE ? ORDER BY id ASC LIMIT 1",
-                    (f"{kc_prefix}%",)
-                ).fetchone()
-                if not row:
-                    return jsonify({"done": True, "message": "Topik ini sudah selesai!"})
+                return jsonify({"done": True, "message": "Topik ini sudah selesai!"})
             
             q = dict(row)
+            
             # Format soal agar sesuai frontend
-            formatted_q = get_random_question(q["kc_id"])  
-            if formatted_q:
-                formatted_q["id"] = q["id"]
-                return jsonify(formatted_q)
+            formatted = get_random_question(q["kc_id"])
+            if formatted:
+                formatted["id"] = q["id"]   # pastikan ada id
+                return jsonify(formatted)
             return jsonify(q)
 
     except Exception as e:
         import traceback
-        print("Sequential Error:", str(e))
+        print("Next Question Error:", str(e))
         print(traceback.format_exc())
         return jsonify({"error": str(e)}), 500
 
