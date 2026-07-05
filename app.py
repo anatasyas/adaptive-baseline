@@ -210,23 +210,35 @@ def register():
 
 @app.get("/api/next-question/<sid>")
 def next_question(sid):
-    """Non-adaptive: ambil soal random dari SEMUA KC"""
+    """Non-adaptive: ambil soal random, support filter topic"""
     try:
-        q = get_random_question(None)   # None = ambil dari semua soal
+        topic = request.args.get("topic")  # ambil dari query string ?topic=xxx
+        
+        # Kalau ada topic, filter KC berdasarkan prefix
+        kc_filter = None
+        if topic:
+            prefix_map = {
+                "bilangan": "KC-B",
+                "operasi": "KC-O",
+                "geometri": "KC-G",
+                "pengukuran": "KC-P",
+                "pola": "KC-A"
+            }
+            kc_filter = prefix_map.get(topic)
+        
+        q = get_random_question_by_topic(kc_filter)   # kita perlu fungsi baru
+        
         if not q:
-            # Fallback soal jika database kosong
             q = {
-                "id": 999,
-                "kc_id": "default",
-                "type": "pilgan",
-                "q": "Berapa hasil dari 2 + 3?",
-                "options": ["4", "5", "6", "7"],
+                "id": 999, "kc_id": "default", "type": "pilgan",
+                "q": "Berapa hasil 2 + 3?", 
+                "options": ["4","5","6","7"], 
                 "answer": "5"
             }
         return jsonify(q)
     except Exception as e:
         print("Next Question Error:", str(e))
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Gagal memuat soal"}), 500
 
 @app.post("/api/answer/<sid>")
 def answer(sid):
