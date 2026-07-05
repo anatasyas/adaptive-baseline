@@ -40,20 +40,29 @@ def index():
     return send_from_directory("static", "index.html")
 
 @app.post("/api/register")
+@app.post("/api/register")
 def register():
-    data = request.json
-    name = data.get("name", "Siswa").strip() or "Siswa"
-    avatar = int(data.get("avatar", 1))
-    sid = f"S{random.randint(10000,99999)}"
-    
-    # Simpan ke database (kalau pakai database)
     try:
-        from database import create_student
-        create_student(sid, name, avatar)
-    except:
-        pass  # kalau tidak pakai DB, skip saja
-    
-    return jsonify({"student_id": sid, "name": name})
+        data = request.json or {}
+        name = data.get("name", "Siswa").strip() or "Siswa"
+        avatar = int(data.get("avatar", 1))
+        sid = f"S{random.randint(10000,99999)}"
+        
+        # Simpan ke database kalau ada
+        try:
+            from database import create_student
+            create_student(sid, name, avatar)
+            print(f"✅ Siswa baru: {sid} - {name}")
+        except Exception as db_err:
+            print("Warning database:", db_err)
+            # Tetap lanjut tanpa DB
+
+        return jsonify({"student_id": sid, "name": name})
+    except Exception as e:
+        import traceback
+        print("Register Error:", str(e))
+        print(traceback.format_exc())
+        return jsonify({"error": str(e)}), 500
 
 @app.get("/api/next-question/<sid>")
 def next_question(sid):
