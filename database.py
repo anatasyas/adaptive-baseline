@@ -351,7 +351,7 @@ def questions_seeded():
     return count_questions() > 0
 
 def get_random_question_by_topic(kc_prefix=None):
-    """Ambil soal acak, bisa difilter per topik"""
+    """Ambil soal acak + format yang sesuai frontend"""
     try:
         with get_conn() as conn:
             if kc_prefix:
@@ -367,9 +367,11 @@ def get_random_question_by_topic(kc_prefix=None):
             if not row:
                 return None
                 
-            return dict(row)  # frontend akan memproses lebih lanjut
+            # Gunakan fungsi existing yang sudah punya logic formatting
+            return get_random_question(row["kc_id"])
+            
     except Exception as e:
-        print("Database random question error:", e)
+        print("Error get_random_question_by_topic:", e)
         return None
 
 
