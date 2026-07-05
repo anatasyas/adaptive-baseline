@@ -36,11 +36,61 @@ def init_baseline():
 
 init_baseline()
 
+from database import get_student, get_all_kc_states, get_mastered_kcs
+
+# ====================== TOPICS & PROGRESS ======================
+@app.get("/api/student/<sid>")
+def get_student_info(sid):
+    student = get_student(sid)
+    if not student:
+        return jsonify({"error": "Siswa tidak ditemukan"}), 404
+    return jsonify(student)
+
+@app.get("/api/topics/<sid>")
+def get_topics(sid):
+    """Return daftar topik dengan progress (baseline sederhana)"""
+    try:
+        mastered = get_mastered_kcs(sid)
+        # Hardcode topik untuk baseline (sesuaikan dengan seed_questions)
+        topics = [
+            {"id": "bilangan", "label": "Bilangan", "n_mastered": len([m for m in mastered if m.startswith("KC-B")]), "n_total": 8, "locked": False},
+            {"id": "operasi", "label": "Operasi Bilangan", "n_mastered": 0, "n_total": 10, "locked": False},
+            {"id": "geometri", "label": "Geometri", "n_mastered": 0, "n_total": 5, "locked": True},
+            {"id": "pengukuran", "label": "Pengukuran", "n_mastered": 0, "n_total": 4, "locked": True},
+            {"id": "pola", "label": "Pola & Aljabar", "n_mastered": 0, "n_total": 3, "locked": True},
+        ]
+        return jsonify(topics)
+    except Exception as e:
+        print("Topics Error:", e)
+        return jsonify([])  # fallback
+
+@app.get("/api/kcs/<topic_id>/<sid>")
+def get_kcs(topic_id, sid):
+    """Daftar KC per topik"""
+    # Untuk baseline, return KC sederhana atau kosong dulu
+    return jsonify([])  # TODO: implement full KC logic
+
+@app.get("/api/progress/<sid>")
+def get_progress(sid):
+    """Progress keseluruhan"""
+    try:
+        states = get_all_kc_states(sid)
+        total = len(states)
+        mastered = sum(1 for s in states.values() if s.get("is_mastered"))
+        stars = 0  # bisa dihitung dari interactions
+        return jsonify({
+            "pct": round((mastered / total * 100) if total else 0),
+            "mastered": mastered,
+            "total": total,
+            "stars": stars
+        })
+    except:
+        return jsonify({"pct": 0, "mastered": 0, "total": 0, "stars": 0})
+
 @app.route("/")
 def index():
     return send_from_directory("static", "index.html")
 
-@app.post("/api/register")
 @app.post("/api/register")
 def register():
     try:
