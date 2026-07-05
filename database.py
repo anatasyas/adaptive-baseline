@@ -350,6 +350,28 @@ def count_questions(kc_id=None):
 def questions_seeded():
     return count_questions() > 0
 
+def get_random_question_by_topic(kc_prefix=None):
+    """Ambil soal acak, bisa difilter per topik"""
+    try:
+        with get_conn() as conn:
+            if kc_prefix:
+                row = conn.execute(
+                    "SELECT * FROM questions WHERE kc_id LIKE ? ORDER BY RANDOM() LIMIT 1",
+                    (f"{kc_prefix}%",)
+                ).fetchone()
+            else:
+                row = conn.execute(
+                    "SELECT * FROM questions ORDER BY RANDOM() LIMIT 1"
+                ).fetchone()
+            
+            if not row:
+                return None
+                
+            return dict(row)  # frontend akan memproses lebih lanjut
+    except Exception as e:
+        print("Database random question error:", e)
+        return None
+
 
 if __name__ == "__main__":
     init_db()
