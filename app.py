@@ -48,21 +48,71 @@ def get_student_info(sid):
 
 @app.get("/api/topics/<sid>")
 def get_topics(sid):
-    """Return daftar topik dengan progress (baseline sederhana)"""
+    """BASELINE: Semua topik terbuka (tidak ada yang di-lock)"""
     try:
-        mastered = get_mastered_kcs(sid)
-        # Hardcode topik untuk baseline (sesuaikan dengan seed_questions)
+        mastered_kcs = get_mastered_kcs(sid)  # dari database.py
+        
         topics = [
-            {"id": "bilangan", "label": "Bilangan", "n_mastered": len([m for m in mastered if m.startswith("KC-B")]), "n_total": 8, "locked": False},
-            {"id": "operasi", "label": "Operasi Bilangan", "n_mastered": 0, "n_total": 10, "locked": False},
-            {"id": "geometri", "label": "Geometri", "n_mastered": 0, "n_total": 5, "locked": True},
-            {"id": "pengukuran", "label": "Pengukuran", "n_mastered": 0, "n_total": 4, "locked": True},
-            {"id": "pola", "label": "Pola & Aljabar", "n_mastered": 0, "n_total": 3, "locked": True},
+            {
+                "id": "bilangan", 
+                "label": "Bilangan", 
+                "n_mastered": 0, 
+                "n_total": 8, 
+                "locked": False,      # ← PASTIKAN FALSE
+                "completed": False
+            },
+            {
+                "id": "operasi", 
+                "label": "Operasi Bilangan", 
+                "n_mastered": 0, 
+                "n_total": 12, 
+                "locked": False,
+                "completed": False
+            },
+            {
+                "id": "geometri", 
+                "label": "Geometri", 
+                "n_mastered": 0, 
+                "n_total": 6, 
+                "locked": False,
+                "completed": False
+            },
+            {
+                "id": "pengukuran", 
+                "label": "Pengukuran", 
+                "n_mastered": 0, 
+                "n_total": 5, 
+                "locked": False,
+                "completed": False
+            },
+            {
+                "id": "pola", 
+                "label": "Pola & Aljabar", 
+                "n_mastered": 0, 
+                "n_total": 4, 
+                "locked": False,
+                "completed": False
+            },
         ]
+        
+        # Update progress real dari database
+        for t in topics:
+            # Hitung berdasarkan KC yang sudah dimaster (opsional)
+            t["n_mastered"] = sum(1 for kc in mastered_kcs if kc.lower().startswith(t["id"][:3]))
+            t["completed"] = t["n_mastered"] >= t["n_total"] * 0.8
+        
         return jsonify(topics)
+        
     except Exception as e:
-        print("Topics Error:", e)
-        return jsonify([])  # fallback
+        print("Topics Error:", str(e))
+        # Fallback: tetap return semua topik terbuka
+        return jsonify([
+            {"id": "bilangan", "label": "Bilangan", "n_mastered": 0, "n_total": 8, "locked": False, "completed": False},
+            {"id": "operasi", "label": "Operasi Bilangan", "n_mastered": 0, "n_total": 12, "locked": False, "completed": False},
+            {"id": "geometri", "label": "Geometri", "n_mastered": 0, "n_total": 6, "locked": False, "completed": False},
+            {"id": "pengukuran", "label": "Pengukuran", "n_mastered": 0, "n_total": 5, "locked": False, "completed": False},
+            {"id": "pola", "label": "Pola & Aljabar", "n_mastered": 0, "n_total": 4, "locked": False, "completed": False},
+        ])
 
 @app.get("/api/kcs/<topic_id>/<sid>")
 def get_kcs(topic_id, sid):
