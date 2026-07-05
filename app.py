@@ -20,10 +20,16 @@ def init_baseline():
     from seed_questions import seed
 
     print("🔄 Seeding ontology...")
-    seed_ontology()          # ← INI YANG PENTING (sebelum seed questions)
+    DATA_PATH = os.path.join(os.path.dirname(__file__), "data", "math_grade1.json")
+    
+    if os.path.exists(DATA_PATH):
+        seed_ontology(DATA_PATH)
+    else:
+        print("⚠️ math_grade1.json tidak ditemukan, menggunakan seeding default")
+        seed_ontology()   # pakai default di database.py
 
     print("🔄 Seeding questions...")
-    seed()                   # baru seed soal
+    seed()
 
     print("✅ Baseline initialized successfully")
 
